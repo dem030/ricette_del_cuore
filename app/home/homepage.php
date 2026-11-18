@@ -1,7 +1,8 @@
 <?php
 // homepage.php
 
-include '../api/connect.php'; 
+require_once '../api/connect.php';
+require_once '../api/auth.php';
 
 
 if (isset($_GET['region']) && !empty($_GET['region'])) {
@@ -27,7 +28,9 @@ if (isset($_GET['region']) && !empty($_GET['region'])) {
           ?>
           <div class="piatto">
             <h2><?php echo htmlspecialchars($piatto['titolo']); ?></h2>
+            <?php if (url_sicuro($piatto['foto'])): // difesa in profondità: niente javascript: o data: ?>
             <img src="<?php echo htmlspecialchars($piatto['foto']); ?>" alt="<?php echo htmlspecialchars($piatto['titolo']); ?>">
+            <?php endif; ?>
             <p><strong>Difficoltà:</strong> <?php echo htmlspecialchars($piatto['difficolta']); ?></p>
             <p><?php echo nl2br(htmlspecialchars($piatto['descrizione'])); ?></p>
           </div>

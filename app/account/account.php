@@ -1,10 +1,11 @@
 <?php
-include '../api/connect.php';
-session_start();
-if (isset($_SESSION['message'])) {
-    echo "<script>alert('" . $_SESSION['message'] . "');</script>";
-    unset($_SESSION['message']); 
-}
+require_once '../api/connect.php';
+require_once '../api/auth.php';
+// Pagina riservata: senza login si viene rimandati alla pagina di accesso
+richiedi_login();
+
+$messaggio = $_SESSION['message'] ?? null;
+unset($_SESSION['message']);
 
 
 try {
@@ -29,7 +30,8 @@ try {
     // Unisce le due serie di ricette
     $recipes = array_merge($ricette, $ricette_regione);
 } catch (Exception $e) {
-    die("Errore di connessione: " . $e->getMessage());
+    error_log("Errore caricamento ricette: " . $e->getMessage());
+    die("Si è verificato un errore. Riprova più tardi.");
 }
 ?>
 <!DOCTYPE html>
@@ -38,13 +40,24 @@ try {
     <meta charset="UTF-8">
     <title>Account personale</title>
     <link rel="stylesheet" href="../css/account.css">
+    <?php if ($messaggio !== null): ?>
+    <script>
+        // json_encode con i flag JSON_HEX_* produce una stringa JavaScript sicura:
+        // apici, < e > vengono codificati, quindi il testo non può uscire dalla stringa (no XSS)
+        alert(<?php echo json_encode($messaggio, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
+    </script>
+    <?php endif; ?>
 </head>
 <body> 
 <div class="header_account">
     <h1> Modifica Ricette</h1>
     <div >
     <a href="../account/inserisci_ricetta.php">aggungi una nuova ricetta</a>
-    <a href="../index.php">Logout</a>
+    <!-- Logout via POST + token CSRF: distrugge davvero la sessione lato server -->
+    <form action="../api/logout.php" method="post" class="logout-form">
+        <?php echo campo_csrf(); ?>
+        <button type="submit">Logout</button>
+    </form>
     </div>    
 </div>
     <!-- Visualizza eventuali messaggi (es. aggiornamento riuscito) -->
@@ -69,7 +82,7 @@ try {
                         <p><strong>Descrizione:</strong> <?php echo nl2br(htmlspecialchars($recipe['descrizione'])); ?></p>
                     <?php endif; ?>
                     <!-- Link per modificare la ricetta; vengono passati id e tabella via GET -->
-                    <a class="modify-btn" href="modifica_ricetta.php?id=<?php echo $recipe['id']; ?>&tabella=<?php echo $recipe['tabella']; ?>">Modifica</a>
+                    <a class="modify-btn" href="modifica_ricetta.php?id=<?php echo (int) $recipe['id']; ?>&amp;tabella=<?php echo urlencode($recipe['tabella']); ?>">Modifica</a>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>

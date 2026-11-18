@@ -1,10 +1,3 @@
-<?php
-include 'api/connect.php';
-if ($conn->connect_error) {
-    echo "Connessione fallita: " . $conn->connect_error;
-} else {
-}
-?>
 
 
 <!DOCTYPE html>

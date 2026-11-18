@@ -1,77 +1,82 @@
 <?php
-include 'connect.php';
-session_start();
+require_once 'connect.php';
+require_once 'auth.php';
 
-// Verifica che i dati base siano presenti
-if (!isset($_POST['tabella'], $_POST['titolo'], $_POST['difficolta'])) {
-    $_SESSION['message'] = "Dati mancanti.";
+// Solo utenti autenticati, solo POST, solo con token CSRF valido
+richiedi_login();
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: ../account/account.php");
+    exit;
+}
+verifica_csrf();
+
+function torna_ad_account(string $messaggio): void
+{
+    $_SESSION['message'] = $messaggio;
     header("Location: ../account/account.php");
     exit;
 }
 
-$tabella   = $_POST['tabella'];
-$titolo    = $conn->real_escape_string($_POST['titolo']);
-$difficolta= $conn->real_escape_string($_POST['difficolta']);
+// Verifica che i dati base siano presenti
+if (!isset($_POST['tabella'], $_POST['titolo'], $_POST['difficolta'])) {
+    torna_ad_account("Dati mancanti.");
+}
 
-// Controlla che la tabella sia valida
-if (!in_array($tabella, ['ricette', 'ricette_regione'])) {
-    $_SESSION['message'] = "Tabella non valida.";
-    header("Location: ../account/account.php");
-    exit;
+// Nota: con i prepared statements non serve real_escape_string
+// (anzi, salverebbe nel DB dei backslash in più).
+$tabella    = $_POST['tabella'];
+$titolo     = trim($_POST['titolo']);
+$difficolta = $_POST['difficolta'];
+
+// Whitelist: tabella e difficoltà possono assumere solo valori previsti
+if (!in_array($tabella, ['ricette', 'ricette_regione'], true)) {
+    torna_ad_account("Tabella non valida.");
+}
+if (!in_array($difficolta, ['Facile', 'Medio', 'Difficile'], true)) {
+    torna_ad_account("Difficoltà non valida.");
 }
 
 if ($tabella === 'ricette') {
     // Inserimento per ricetta internazionale
     if (!isset($_POST['ingredienti'], $_POST['ricetta'], $_POST['tempo_preparazione'], $_POST['cucina'])) {
-        $_SESSION['message'] = "Dati mancanti per la ricetta internazionale.";
-        header("Location: ../account/account.php");
-        exit;
+        torna_ad_account("Dati mancanti per la ricetta internazionale.");
     }
-    
-    $ingredienti        = $conn->real_escape_string($_POST['ingredienti']);
-    $ricetta            = $conn->real_escape_string($_POST['ricetta']);
+
+    $ingredienti        = $_POST['ingredienti'];
+    $ricetta            = $_POST['ricetta'];
     $tempo_preparazione = (int) $_POST['tempo_preparazione'];
-    $cucina             = $conn->real_escape_string($_POST['cucina']);
-    
-    $query = "INSERT INTO ricette (titolo, ingredienti, ricetta, difficolta, tempo_preparazione, cucina) VALUES (?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($query);
+    $cucina             = $_POST['cucina'];
+
+    $stmt = $conn->prepare("INSERT INTO ricette (titolo, ingredienti, ricetta, difficolta, tempo_preparazione, cucina) VALUES (?, ?, ?, ?, ?, ?)");
     if (!$stmt) {
-        $_SESSION['message'] = "Errore nella preparazione della query.";
-        header("Location: ../account/account.php");
-        exit;
+        torna_ad_account("Errore nella preparazione della query.");
     }
     $stmt->bind_param("ssssis", $titolo, $ingredienti, $ricetta, $difficolta, $tempo_preparazione, $cucina);
-    
-} elseif ($tabella === 'ricette_regione') {
+
+} else {
     // Inserimento per ricetta regionale
     if (!isset($_POST['foto'], $_POST['regione'], $_POST['descrizione'])) {
-        $_SESSION['message'] = "Dati mancanti per la ricetta regionale.";
-        header("Location: ../account/account.php");
-        exit;
+        torna_ad_account("Dati mancanti per la ricetta regionale.");
     }
-    
-    $foto        = $conn->real_escape_string($_POST['foto']);
-    $regione     = $conn->real_escape_string($_POST['regione']);
-    $descrizione = $conn->real_escape_string($_POST['descrizione']);
-    
-    $query = "INSERT INTO ricette_regione (foto, titolo, regione, difficolta, descrizione) VALUES (?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($query);
+
+    $foto        = trim($_POST['foto']);
+    $regione     = $_POST['regione'];
+    $descrizione = $_POST['descrizione'];
+
+    // Solo URL http/https: blocca javascript:, data:, ecc.
+    if (!url_sicuro($foto)) {
+        torna_ad_account("L'URL della foto non è valido (deve iniziare con http:// o https://).");
+    }
+
+    $stmt = $conn->prepare("INSERT INTO ricette_regione (foto, titolo, regione, difficolta, descrizione) VALUES (?, ?, ?, ?, ?)");
     if (!$stmt) {
-        $_SESSION['message'] = "Errore nella preparazione della query.";
-        header("Location: ../account/account.php");
-        exit;
+        torna_ad_account("Errore nella preparazione della query.");
     }
     $stmt->bind_param("sssss", $foto, $titolo, $regione, $difficolta, $descrizione);
 }
 
-// Esegui la query
 if ($stmt->execute()) {
-    $_SESSION['message'] = "Ricetta inserita con successo!";
-    header("Location: ../account/account.php");
-    exit;
-} else {
-    $_SESSION['message'] = "Errore durante l'inserimento della ricetta.";
-    header("Location: ../account/account.php");
-    exit;
+    torna_ad_account("Ricetta inserita con successo!");
 }
-?>
+error_log("Errore inserimento ricetta: " . $stmt->error);
+torna_ad_account("Errore durante l'inserimento della ricetta.");

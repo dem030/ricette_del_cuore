@@ -105,7 +105,14 @@ form a:hover {
     
 }
 
-.header_account a {
+.header_account .logout-form {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+.header_account a,
+.header_account .logout-form button {
     display: block;
     width: fit-content;
     background-color: var(--main-color);

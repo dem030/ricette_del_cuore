@@ -362,11 +362,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`FirstName`, `LastName`, `username`, `email`, `password`) VALUES
-('admin', 'admin', 'admin', 'admin@admin.it', '$argon2id$v=19$m=65536,t=4,p=1$cHgxc2tVaTBiUEdkbk9NRQ$4MEO9sF+Pqzmj7VZ6wYQLj7ia9gGlb1Qqw2PdRhabvI'),
-('Demetrio', 'Priolo', 'dem01', 'demetrio.priolo2003@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$M1JRb1ZKOU43bHJ3cU1neA$b9OrEWEv/WiCCBRriuIyszuh8V8eY59icXLy1ZEWBy0'),
-('veli', 'mori', 'velimori', 'veliamariadecicco@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$UEtpOHozV0ZFMTBXTVlmVw$dorxurFLQP/s0rzHbws2BZRh8gv4fjL2eL/pgfREz84'),
-('demetrio', 'priolo', 'dem', 'priolod29@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$YS50MVZ0RGt5Smd2MXdKdQ$tPROMxBwGQjyQs0u3kaFGcifsiMmEKQXZNce+02fcCg'),
-('teresa', 'arico', 'terry', 'teresa.arico@yahoo.it', '$argon2id$v=19$m=65536,t=4,p=1$Q2I0ZnlzcE1xMnJ3aThwVw$+N0i/Udl7eWWSf769vN0Zt27KQu6NT6+MyjJRxZmnxI');
+('admin', 'admin', 'admin', 'admin@admin.it', '$argon2id$v=19$m=65536,t=4,p=1$cHgxc2tVaTBiUEdkbk9NRQ$4MEO9sF+Pqzmj7VZ6wYQLj7ia9gGlb1Qqw2PdRhabvI');
 
 --
 -- Indici per le tabelle scaricate
@@ -383,6 +379,14 @@ ALTER TABLE `ricette`
 --
 ALTER TABLE `ricette_regione`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indici per la tabella `users`
+-- (email e username univoci: niente account duplicati)
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`email`),
+  ADD UNIQUE KEY `username` (`username`);
 
 --
 -- AUTO_INCREMENT per le tabelle scaricate

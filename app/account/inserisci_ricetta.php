@@ -1,6 +1,7 @@
 <?php
-session_start();
-
+require_once '../api/auth.php';
+// Pagina riservata
+richiedi_login();
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -49,6 +50,7 @@ session_start();
         <h1>Inserisci Nuova Ricetta</h1>
         
         <form action="../api/inserisci_ricetta.php" method="post">
+            <?php echo campo_csrf(); ?>
             <!-- Selezione del tipo di ricetta -->
             <div class="form-group">
                 <label for="tipo_ricetta">Tipo di Ricetta:</label>
@@ -98,7 +100,7 @@ session_start();
             <div id="regionale-fields" style="display:none;">
                 <div class="form-group">
                     <label for="foto">URL della Foto:</label>
-                    <input type="url" id="foto" name="foto">
+                    <input type="url" id="foto" name="foto" pattern="https?://.+" placeholder="https://...">
                 </div>
                 <div class="form-group">
                     <label for="regione">Regione:</label>
